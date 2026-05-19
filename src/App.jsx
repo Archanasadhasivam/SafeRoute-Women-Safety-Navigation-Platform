@@ -1,9 +1,51 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import Header from './components/Header';
+import TaskForm from './components/TaskForm';
+import TaskList from './components/TaskList';
 
 function App() {
+
+  // ── State Management (useState) ──────────────────────
+  const [tasks, setTasks] = useState(() => {
+    // useEffect alternative: load from localStorage on first render
+    const saved = localStorage.getItem('saferoute-tasks');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // ── useEffect: Save tasks to localStorage on every change ──
+  useEffect(() => {
+    localStorage.setItem('saferoute-tasks', JSON.stringify(tasks));
+  }, [tasks]);
+
+  // ── Add Task Handler ─────────────────────────────────
+  const handleAddTask = (taskText, priority) => {
+    const newTask = {
+      id: Date.now(),
+      text: taskText,
+      priority: priority,
+      completed: false,
+      createdAt: new Date().toLocaleTimeString(),
+    };
+    setTasks((prev) => [newTask, ...prev]);
+  };
+
+  // ── Delete Task Handler ──────────────────────────────
+  const handleDeleteTask = (id) => {
+    setTasks((prev) => prev.filter((task) => task.id !== id));
+  };
+
+  // ── Toggle Complete Handler ──────────────────────────
+  const handleToggleComplete = (id) => {
+    setTasks((prev) =>
+      prev.map((task) =>
+        task.id === id ? { ...task, completed: !task.completed } : task
+      )
+    );
+  };
+
   return (
     <>
-      {/* 1. Header & Navigation */}
+      {/* ── Navbar ── */}
       <header className="navbar">
         <div className="logo">
           <i className="fa-solid fa-shield-halved"></i> SafeRoute
@@ -13,20 +55,25 @@ function App() {
             <li><a href="#features">Features</a></li>
             <li><a href="#how-it-works">How It Works</a></li>
             <li><a href="#roles">User Roles</a></li>
-            <li><a href="#contact">Emergency Contact</a></li>
+            <li><a href="#tasks">Task Manager</a></li>
           </ul>
         </nav>
         <button className="btn btn-primary">Download App</button>
       </header>
 
-      {/* 2. Hero Section */}
+      {/* ── Hero Section ── */}
       <section className="hero-section">
         <div className="hero-content">
           <h1>Empowering Women with <span className="highlight">AI-Powered</span> Safe Navigation</h1>
           <p>Navigate confidently using real-time crime data, street lighting metrics, and crowd density analysis to choose the safest path home.</p>
           <div className="hero-buttons">
-            <a href="#how-it-works" class="btn btn-secondary">Explore Live Map</a>
-            <button className="btn btn-sos"><i className="fa-solid fa-circle-exclamation"></i> Trigger SOS Demo</button>
+            <a href="#how-it-works" className="btn btn-secondary">Explore Live Map</a>
+            <button
+              className="btn btn-sos"
+              onClick={() => alert('🚨 Emergency SOS Trigger Simulated! Broadcast sent to guardians.')}
+            >
+              <i className="fa-solid fa-circle-exclamation"></i> Trigger SOS Demo
+            </button>
           </div>
         </div>
         <div className="hero-image">
@@ -38,11 +85,10 @@ function App() {
         </div>
       </section>
 
-      {/* 3. Key Features Section */}
+      {/* ── Features Section ── */}
       <section id="features" className="features-section">
         <h2>Core Platform Features</h2>
         <p className="section-sub">Advanced MERN-Stack architecture designed for real-world impact.</p>
-        
         <div className="features-grid">
           <div className="feature-card">
             <i className="fa-solid fa-route icon-safe"></i>
@@ -62,7 +108,7 @@ function App() {
         </div>
       </section>
 
-      {/* 4. Interactive Architecture/Flow Overview */}
+      {/* ── How It Works ── */}
       <section id="how-it-works" className="flow-section">
         <h2>How SafeRoute Protects You</h2>
         <div className="flow-container">
@@ -84,7 +130,7 @@ function App() {
         </div>
       </section>
 
-      {/* 5. User Roles Section */}
+      {/* ── Roles Section ── */}
       <section id="roles" className="roles-section">
         <h2>Platform Ecosystem</h2>
         <div className="roles-grid">
@@ -106,16 +152,23 @@ function App() {
         </div>
       </section>
 
-      {/* 6. Demo Registration Form / Contact Footer */}
-      <footer id="contact" className="footer-section">
+      {/* ── Task Manager Section ── */}
+      <section id="tasks" className="task-section">
+        <Header />
+        <TaskForm onAddTask={handleAddTask} />
+        <TaskList
+          tasks={tasks}
+          onDelete={handleDeleteTask}
+          onToggleComplete={handleToggleComplete}
+        />
+      </section>
+
+      {/* ── Footer ── */}
+      <footer className="footer-section">
         <div className="footer-content">
           <div className="footer-form">
             <h3>Stay Informed & Secure</h3>
-            <p>Sign up to get notified when our comprehensive MERN application beta goes live.</p>
-            <form action="#" method="POST" onSubmit={(e) => { e.preventDefault(); alert('Demo Registration Successful!'); }}>
-              <input type="email" placeholder="Enter your email address" required />
-              <button type="submit" className="btn btn-primary">Register for Beta</button>
-            </form>
+            <p>Sign up to get notified when our MERN application beta goes live.</p>
           </div>
         </div>
         <hr />
