@@ -1,99 +1,104 @@
 // ── Student Controller ────────────────────────────────
-// Contains all CRUD operation logic
-// Each function handles one API endpoint
+// CRUD operations using MongoDB + Mongoose
+// As taught by teacher: User.create, User.find, User.findByIdAndUpdate, User.findByIdAndDelete
  
-const students = require('../model/userModel');
+const User = require('../model/userModel');
  
 // ── GET /students → Fetch all students ───────────────
-const getAllStudents = (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: 'Students fetched successfully',
-    total: students.length,
-    data: students,
-  });
+const getAllStudents = async (req, res) => {
+  try {
+    const users = await User.find();
+    res.status(200).json({
+      success: true,
+      message: 'Students fetched successfully',
+      total: users.length,
+      data: users,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching students',
+      error: error.message,
+    });
+  }
 };
  
 // ── POST /students → Add a new student ───────────────
-const addStudent = (req, res) => {
-  const { name, age, department, email } = req.body;
- 
-  // Validation
-  if (!name || !age || !department || !email) {
-    return res.status(400).json({
+const addStudent = async (req, res) => {
+  try {
+    const user = await User.create(req.body);
+    res.status(201).json({
+      success: true,
+      message: 'Student added successfully',
+      data: user,
+    });
+  } catch (error) {
+    // Handle duplicate email error
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email already exists',
+        error: error.message,
+      });
+    }
+    res.status(500).json({
       success: false,
-      message: 'All fields are required: name, age, department, email',
+      message: 'Server error while adding student',
+      error: error.message,
     });
   }
- 
-  // Create new student with auto-incremented id
-  const newStudent = {
-    id: students.length > 0 ? students[students.length - 1].id + 1 : 1,
-    name,
-    age,
-    department,
-    email,
-  };
- 
-  students.push(newStudent);
- 
-  res.status(201).json({
-    success: true,
-    message: 'Student added successfully',
-    data: newStudent,
-  });
 };
  
-// ── PUT /students/:id → Update student details ────────
-const updateStudent = (req, res) => {
-  const id = parseInt(req.params.id);
-  const { name, age, department, email } = req.body;
- 
-  // Find student index
-  const index = students.findIndex((s) => s.id === id);
- 
-  if (index === -1) {
-    return res.status(404).json({
+// ── PUT /students/:id → Update student ───────────────
+const updateStudent = async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true, runValidators: true }
+    );
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: `Student with id ${req.params.id} not found`,
+      });
+    }
+    res.status(200).json({
+      success: true,
+      message: 'Student updated successfully',
+      data: user,
+    });
+  } catch (error) {
+    res.status(500).json({
       success: false,
-      message: `Student with id ${id} not found`,
+      message: 'Server error while updating student',
+      error: error.message,
     });
   }
- 
-  // Update only the fields that are provided
-  if (name)       students[index].name       = name;
-  if (age)        students[index].age        = age;
-  if (department) students[index].department = department;
-  if (email)      students[index].email      = email;
- 
-  res.status(200).json({
-    success: true,
-    message: `Student with id ${id} updated successfully`,
-    data: students[index],
-  });
 };
  
-// ── DELETE /students/:id → Delete a student ───────────
-const deleteStudent = (req, res) => {
-  const id = parseInt(req.params.id);
- 
-  // Find student index
-  const index = students.findIndex((s) => s.id === id);
- 
-  if (index === -1) {
-    return res.status(404).json({
+// ── DELETE /students/:id → Delete student ────────────
+const deleteStudent = async (req, res) => {
+  try {
+    const user = await User.findByIdAndDelete(req.params.id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: `Student with id ${req.params.id} not found`,
+      });
+    }
+    res.status(200).json({
+      success: true,
+      message: 'Student deleted successfully',
+      data: user,
+    });
+  } catch (error) {
+    res.status(500).json({
       success: false,
-      message: `Student with id ${id} not found`,
+      message: 'Server error while deleting student',
+      error: error.message,
     });
   }
- 
-  // Remove student from array
-  const deletedStudent = students.splice(index, 1);
- 
-  res.status(200).json({
-    success: true,
-    message: `Student with id ${id} deleted successfully`,
-    data: deletedStudent[0],
-  });
 };
  
 module.exports = {
@@ -102,4 +107,5 @@ module.exports = {
   updateStudent,
   deleteStudent,
 };
-  
+
+

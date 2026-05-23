@@ -1,25 +1,30 @@
- let students = [
-  {
-    id: 1,
-    name: "Archana S",
-    age: 20,
-    department: "Information Technology",
-    email: "archana@citcoimbatore.ac.in",
-  },
-  {
-    id: 2,
-    name: "Priya R",
-    age: 21,
-    department: "Computer Science",
-    email: "priya@citcoimbatore.ac.in",
-  },
-  {
-    id: 3,
-    name: "Divya M",
-    age: 22,
-    department: "Electronics",
-    email: "divya@citcoimbatore.ac.in",
-  },
-];
+// ── Student Model ─────────────────────────────────────
+// Mongoose Schema and Model for Student
+// As taught by teacher: name(String), age(Number), email(String)
  
-module.exports = students;
+const mongoose = require('mongoose');
+ 
+// ── Define Schema ─────────────────────────────────────
+const userSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true,
+  },
+  age: {
+    type: Number,
+  },
+  department: {
+    type: String,
+    required: true,
+  },
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+  },
+});
+ 
+// ── Create Model from Schema ──────────────────────────
+const User = mongoose.model('User', userSchema);
+ 
+module.exports = User;

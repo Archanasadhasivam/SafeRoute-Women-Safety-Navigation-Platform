@@ -1,9 +1,12 @@
 // ── SafeRoute Backend Server ──────────────────────────
-// Student Management REST API
+// Student Management REST API with MongoDB
 // Port: 3000
  
 const express = require('express');
 const app = express();
+ 
+// ── Import DB Connection ──────────────────────────────
+const connectDB = require('./config/db');
  
 // ── Import Middleware ─────────────────────────────────
 const logger = require('./middleware/logger');
@@ -11,11 +14,13 @@ const logger = require('./middleware/logger');
 // ── Import Routes ─────────────────────────────────────
 const userRoute = require('./Router/userRoute');
  
+// ── Connect to MongoDB ────────────────────────────────
+connectDB();
+ 
 // ── Built-in Middleware ───────────────────────────────
-app.use(express.json()); // Parse incoming JSON request body
+app.use(express.json());
  
 // ── Custom Logger Middleware ──────────────────────────
-// Logs METHOD + URL for every request
 app.use(logger);
  
 // ── Routes ────────────────────────────────────────────
@@ -25,11 +30,12 @@ app.use('/students', userRoute);
 app.get('/', (req, res) => {
   res.json({
     message: '🛡️ SafeRoute Student Management API is running!',
+    database: 'MongoDB Connected',
     endpoints: {
-      fetchAll:  'GET    /students',
-      addNew:    'POST   /students',
-      update:    'PUT    /students/:id',
-      delete:    'DELETE /students/:id',
+      fetchAll: 'GET    /students',
+      addNew:   'POST   /students',
+      update:   'PUT    /students/:id',
+      delete:   'DELETE /students/:id',
     },
   });
 });
@@ -40,4 +46,3 @@ app.listen(PORT, () => {
   console.log(`✅ Server is running on http://localhost:${PORT}`);
   console.log(`📋 Student API ready at http://localhost:${PORT}/students`);
 });
- 
