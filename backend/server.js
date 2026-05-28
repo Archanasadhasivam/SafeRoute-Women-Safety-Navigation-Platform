@@ -49,3 +49,4 @@ app.listen(PORT, () => {
   console.log(`📋 Students API: http://localhost:${PORT}/students`);
   console.log(`🔐 Auth API: http://localhost:${PORT}/auth/sign-up`);
 });
+module.exports = app;
