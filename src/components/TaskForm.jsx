@@ -11,7 +11,6 @@ function TaskForm({ onAddTask }) {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // Validation checks
     if (taskText.trim() === '') {
       setError('⚠️ Task cannot be empty!');
       return;
@@ -25,11 +24,8 @@ function TaskForm({ onAddTask }) {
       return;
     }
 
-    // Clear error and add task
     setError('');
     onAddTask(taskText.trim(), priority);
-
-    // Reset form fields
     setTaskText('');
     setPriority('medium');
   };
@@ -47,7 +43,7 @@ function TaskForm({ onAddTask }) {
             value={taskText}
             onChange={(e) => {
               setTaskText(e.target.value);
-              if (error) setError(''); // clear error on typing
+              if (error) setError('');
             }}
             maxLength={100}
           />

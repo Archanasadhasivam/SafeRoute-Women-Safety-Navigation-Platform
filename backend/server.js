@@ -1,8 +1,9 @@
 // ── SafeRoute Backend Server ──────────────────────────
-// Student Management REST API with MongoDB
+// Full Stack MERN Application
 // Port: 3000
  
 const express = require('express');
+const cors = require('cors');
 const app = express();
  
 // ── Import DB Connection ──────────────────────────────
@@ -13,29 +14,30 @@ const logger = require('./middleware/logger');
  
 // ── Import Routes ─────────────────────────────────────
 const userRoute = require('./Router/userRoute');
+const authRoute = require('./Router/authRoute');
  
 // ── Connect to MongoDB ────────────────────────────────
 connectDB();
  
 // ── Built-in Middleware ───────────────────────────────
-app.use(express.json());
+app.use(cors());           // Allow React frontend to call this API
+app.use(express.json());   // Parse incoming JSON
  
 // ── Custom Logger Middleware ──────────────────────────
 app.use(logger);
  
 // ── Routes ────────────────────────────────────────────
-app.use('/students', userRoute);
+app.use('/students', userRoute);   // Student CRUD
+app.use('/auth', authRoute);       // Register + Login
  
 // ── Root Route ────────────────────────────────────────
 app.get('/', (req, res) => {
   res.json({
-    message: '🛡️ SafeRoute Student Management API is running!',
-    database: 'MongoDB Connected',
+    message: '🛡️ SafeRoute API is running!',
     endpoints: {
-      fetchAll: 'GET    /students',
-      addNew:   'POST   /students',
-      update:   'PUT    /students/:id',
-      delete:   'DELETE /students/:id',
+      students:  'GET/POST/PUT/DELETE /students',
+      register:  'POST /auth/sign-up',
+      login:     'POST /auth/sign-in',
     },
   });
 });
@@ -43,6 +45,7 @@ app.get('/', (req, res) => {
 // ── Start Server ──────────────────────────────────────
 const PORT = 3000;
 app.listen(PORT, () => {
-  console.log(`✅ Server is running on http://localhost:${PORT}`);
-  console.log(`📋 Student API ready at http://localhost:${PORT}/students`);
+  console.log(`✅ Server running on http://localhost:${PORT}`);
+  console.log(`📋 Students API: http://localhost:${PORT}/students`);
+  console.log(`🔐 Auth API: http://localhost:${PORT}/auth/sign-up`);
 });

@@ -1,66 +1,53 @@
- 
 import React from 'react';
-import TaskItem from './TaskItem';
 
-function TaskList({ tasks, onDelete, onToggleComplete }) {
-
-  // ── Filter counts ────────────────────────────────────
-  const totalTasks     = tasks.length;
-  const completedTasks = tasks.filter((t) => t.completed).length;
-  const pendingTasks   = totalTasks - completedTasks;
-
-  // ── Empty State ──────────────────────────────────────
-  if (totalTasks === 0) {
-    return (
-      <div className="task-empty">
-        <i className="fa-solid fa-shield-halved"></i>
-        <h3>No tasks yet</h3>
-        <p>Add your first safety checklist item above!</p>
-      </div>
-    );
-  }
-
+function RegisterGate() {
   return (
-    <div className="task-list-wrapper">
-
-      {/* ── Stats Bar ── */}
-      <div className="task-stats">
-        <div className="stat-box">
-          <span className="stat-number">{totalTasks}</span>
-          <span className="stat-label">Total</span>
-        </div>
-        <div className="stat-box stat-pending">
-          <span className="stat-number">{pendingTasks}</span>
-          <span className="stat-label">Pending</span>
-        </div>
-        <div className="stat-box stat-done">
-          <span className="stat-number">{completedTasks}</span>
-          <span className="stat-label">Completed</span>
-        </div>
-
-        {/* ── Progress Bar ── */}
-        <div className="task-progress">
-          <div
-            className="task-progress-fill"
-            style={{ width: totalTasks > 0 ? `${(completedTasks / totalTasks) * 100}%` : '0%' }}
-          ></div>
-        </div>
+    <div style={{
+      // The box styling updated to match your theme
+      backgroundColor: '#fdf2f8', 
+      padding: '2rem',
+      borderRadius: '16px',
+      border: '1px solid #fbcfe8',
+      color: '#831843', // Dark pink text for high contrast
+      maxWidth: '400px',
+      margin: '2rem auto'
+    }}>
+      
+      {/* Example Form Structure */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <input type="text" placeholder="Enter your full name" style={inputStyle} />
+        <input type="tel" placeholder="e.g., +1234567890" style={inputStyle} />
+        <input type="text" placeholder="Guardian's phone number" style={inputStyle} />
+        <input type="text" placeholder="Enter your username" style={inputStyle} />
+        <input type="password" placeholder="Enter password (min 6 char)" style={inputStyle} />
+        
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem' }}>
+          <input type="checkbox" />
+          Authorize SafeRoute live location monitoring layers
+        </label>
+        
+        <button style={{
+          backgroundColor: '#db2777',
+          color: 'white',
+          padding: '0.75rem',
+          borderRadius: '8px',
+          border: 'none',
+          fontWeight: 'bold',
+          cursor: 'pointer'
+        }}>
+          Register
+        </button>
       </div>
-
-      {/* ── Task Items — rendered using map() ── */}
-      <div className="task-list">
-        {tasks.map((task) => (
-          <TaskItem
-            key={task.id}
-            task={task}
-            onDelete={onDelete}
-            onToggleComplete={onToggleComplete}
-          />
-        ))}
-      </div>
-
     </div>
   );
 }
 
-export default TaskList;
+// Reusable input style to keep things clean
+const inputStyle = {
+  padding: '0.75rem',
+  borderRadius: '8px',
+  border: '1px solid #fbcfe8',
+  backgroundColor: '#ffffff'
+};
+
+export default RegisterGate;
