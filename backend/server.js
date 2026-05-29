@@ -1,52 +1,87 @@
 // ── SafeRoute Backend Server ──────────────────────────
 // Full Stack MERN Application
 // Port: 3000
- 
+
 const express = require('express');
 const cors = require('cors');
 const app = express();
- 
+
 // ── Import DB Connection ──────────────────────────────
 const connectDB = require('./config/db');
- 
+
 // ── Import Middleware ─────────────────────────────────
 const logger = require('./middleware/logger');
- 
+
 // ── Import Routes ─────────────────────────────────────
-const userRoute = require('./Router/userRoute');
-const authRoute = require('./Router/authRoute');
- 
+const userRoute   = require('./Router/userRoute');
+const authRoute   = require('./Router/authRoute');
+const taskRoutes  = require('./Router/taskRoutes');
+const routeRoutes = require('./Router/routeRoutes');
+
 // ── Connect to MongoDB ────────────────────────────────
 connectDB();
- 
+
+// ── CORS Configuration ────────────────────────────────
+app.use(cors({
+  origin: [
+    'https://saferoute-frontend-three.vercel.app',
+    'http://localhost:5173',
+    'http://localhost:5174',
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+
 // ── Built-in Middleware ───────────────────────────────
-app.use(cors());           // Allow React frontend to call this API
-app.use(express.json());   // Parse incoming JSON
- 
+app.use(express.json());
+
 // ── Custom Logger Middleware ──────────────────────────
 app.use(logger);
- 
-// ── Routes ────────────────────────────────────────────
-app.use('/students', userRoute);   // Student CRUD
-app.use('/auth', authRoute);       // Register + Login
- 
+
+// ── API Route Registration ────────────────────────────
+app.use('/students',   userRoute);
+app.use('/auth',       authRoute);
+app.use('/tasks',      taskRoutes);
+app.use('/api/routes', routeRoutes);
+
 // ── Root Route ────────────────────────────────────────
 app.get('/', (req, res) => {
   res.json({
-    message: '🛡️ SafeRoute API is running!',
+    message: '🛡️ SafeRoute Spatial Assessment API Engine is fully active!',
+    status: 'ONLINE',
+    timestamp: new Date(),
     endpoints: {
-      students:  'GET/POST/PUT/DELETE /students',
-      register:  'POST /auth/sign-up',
-      login:     'POST /auth/sign-in',
-    },
+      students: 'GET/POST/PUT/DELETE /students',
+      auth:     'POST /auth/sign-up | POST /auth/sign-in | GET /auth/users',
+      tasks:    'GET/POST/DELETE /tasks',
+      routes:   'GET /api/routes',
+    }
   });
 });
- 
-// ── Start Server ──────────────────────────────────────
-const PORT = 3000;
-app.listen(PORT, () => {
-  console.log(`✅ Server running on http://localhost:${PORT}`);
-  console.log(`📋 Students API: http://localhost:${PORT}/students`);
-  console.log(`🔐 Auth API: http://localhost:${PORT}/auth/sign-up`);
+
+// ── 404 Handler ───────────────────────────────────────
+app.use((req, res, next) => {
+  res.status(404).json({
+    success: false,
+    message: `Cannot execute ${req.method} on ${req.originalUrl}.`,
+  });
 });
-module.exports = app;
+
+// ── Global Error Handler ──────────────────────────────
+app.use((err, req, res, next) => {
+  console.error('❌ Server Internal Error:', err.stack);
+  res.status(500).json({
+    success: false,
+    message: 'A critical routing exception occurred.',
+    error: err.message,
+  });
+});
+
+// ── Start Server ──────────────────────────────────────
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`\n======================================================`);
+  console.log(`✅ SafeRoute Kernel running on http://localhost:${PORT}`);
+  console.log(`======================================================`);
+});
