@@ -9,7 +9,7 @@ function StudentList() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await API.get('/auth/users');
+        const response = await API.get('/students'); // ✅ fixed: was '/auth/users'
         setUsers(response.data.data);
         setLoading(false);
       } catch (error) {
