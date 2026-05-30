@@ -21,14 +21,19 @@ function Login({ onLoginSuccess }) {
     try {
       const response = await API.post('/auth/sign-in', { username, password });
       
+      // Look directly at response.data since token and username are at the top level
       if (response.data && response.data.token) {
         localStorage.setItem('token', response.data.token);
-        localStorage.setItem('username', response.data.data.username);
+        
+        // FIX: Changed from response.data.data.username to response.data.username
+        const loggedInUser = response.data.username;
+        localStorage.setItem('username', loggedInUser);
         
         setMessage('✅ Login successful! Syncing safe-workspace panels...');
         
         setTimeout(() => {
-          onLoginSuccess(response.data.data.username);
+          // FIX: Pass the correct top-level username variable to your parent component
+          onLoginSuccess(loggedInUser);
         }, 800);
       } else {
         setMessage('❌ Invalid response structure returned from security controller.');
@@ -46,7 +51,7 @@ function Login({ onLoginSuccess }) {
       display: 'flex',
       flexDirection: 'column',
       gap: '1rem',
-      backgroundColor: '#fdf2f8', // Matches your theme
+      backgroundColor: '#fdf2f8', 
       padding: '1.5rem',
       borderRadius: '12px',
       border: '1px solid #fbcfe8',

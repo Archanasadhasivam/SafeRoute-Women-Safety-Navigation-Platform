@@ -1,27 +1,30 @@
-// ── Student Routes ────────────────────────────────────
-// Defines all REST API endpoints for student management
-// Each route is connected to its controller function
- 
+'use strict';
+
 const express = require('express');
-const router = express.Router();
- 
+const path = require('path');
+
+// path.join guarantees the correct separator on every OS;
+// all lowercase folder name eliminates Linux case-sensitivity failures.
 const {
   getAllStudents,
   addStudent,
   updateStudent,
   deleteStudent,
-} = require('../Controller/userController');
- 
-// GET    /students       → Fetch all students
-router.get('/', getAllStudents);
- 
-// POST   /students       → Add a new student
+} = require(path.join(__dirname, '..', 'controller', 'userController'));
+
+const router = express.Router();
+
+// GET /students  — full list (supports both /students and /students/all)
+router.get('/',    getAllStudents);
+router.get('/all', getAllStudents);
+
+// POST /students — create a new student record
 router.post('/', addStudent);
- 
-// PUT    /students/:id   → Update student by id
+
+// PUT  /students/:id — update by id
 router.put('/:id', updateStudent);
- 
-// DELETE /students/:id   → Delete student by id
+
+// DELETE /students/:id — remove by id
 router.delete('/:id', deleteStudent);
- 
-module.exports = router; 
+
+module.exports = router;

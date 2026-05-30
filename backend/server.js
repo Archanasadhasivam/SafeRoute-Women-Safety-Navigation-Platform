@@ -1,131 +1,138 @@
+'use strict';
+
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const mongoose = require('mongoose');
+const path = require('path');
 
 dotenv.config();
 
+// ─── Vercel Serverless MongoDB Connection Cache ────────────────────────────────
+// Cached at module scope so the connection persists across warm invocations.
+// On a cold start, connectDB() awaits a fresh connection before handlers run.
+let cachedConnection = null;
+
+async function connectDB() {
+  if (cachedConnection && mongoose.connection.readyState === 1) {
+    return cachedConnection;
+  }
+
+  const uri = process.env.MONGO_URI || process.env.MONGODB_URI;
+  if (!uri) {
+    throw new Error('❌ MongoDB URI is not defined in environment variables.');
+  }
+
+  try {
+    const conn = await mongoose.connect(uri, {
+      // These options prevent Vercel from hanging on cold starts
+      serverSelectionTimeoutMS: 5000,   // fail fast if Atlas is unreachable
+      socketTimeoutMS: 45000,
+      maxPoolSize: 10,
+      minPoolSize: 1,
+      // Keeps the connection alive between serverless invocations
+      bufferCommands: false,
+    });
+
+    cachedConnection = conn;
+    console.log('✅ MongoDB connected:', mongoose.connection.host);
+    return conn;
+  } catch (err) {
+    cachedConnection = null;
+    console.error('❌ MongoDB connection error:', err.message);
+    throw err;
+  }
+}
+
+// ─── Express App ───────────────────────────────────────────────────────────────
 const app = express();
 
-// ─────────────────────────────────────────────
-// Import DB Connection
-// ─────────────────────────────────────────────
-const connectDB = require('./config/db');
-
-// ─────────────────────────────────────────────
-// Import Middleware
-// ─────────────────────────────────────────────
-const logger = require('./middleware/logger');
-
-// ─────────────────────────────────────────────
-// Import Routes
-// ─────────────────────────────────────────────
-const userRoute = require('./Router/userRoute');
-const authRoute = require('./Router/authRoute');
-
-// ─────────────────────────────────────────────
-// Connect Database
-// ─────────────────────────────────────────────
-connectDB();
-
-// ─────────────────────────────────────────────
-// Allowed Frontend Origins
-// ─────────────────────────────────────────────
+// CORS — allow your Vercel frontend + localhost dev
 const allowedOrigins = [
   'https://saferoute-frontend-three.vercel.app',
   'http://localhost:5173',
-  'http://localhost:5174',
+  'http://localhost:3000',
 ];
 
-// ─────────────────────────────────────────────
-// CORS Configuration
-// ─────────────────────────────────────────────
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      // Allow requests with no origin (Postman/mobile apps)
-      if (!origin) return callback(null, true);
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (curl, Postman, server-to-server)
+    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    callback(new Error(`CORS blocked: origin ${origin} not allowed`));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 
-      if (allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error('CORS Not Allowed'));
-      }
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-  })
-);
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
 
-// ─────────────────────────────────────────────
-// Global Middleware
-// ─────────────────────────────────────────────
-app.use(express.json());
-app.use(logger);
+// ─── DB-aware middleware ───────────────────────────────────────────────────────
+// Every request awaits a live DB connection BEFORE reaching any route handler.
+// This is the key fix for Vercel cold-start race conditions.
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    console.error('DB connection middleware failed:', err.message);
+    return res.status(503).json({
+      success: false,
+      message: 'Database unavailable. Please try again shortly.',
+      error: err.message,
+    });
+  }
+});
 
-// ─────────────────────────────────────────────
-// Root Route
-// ─────────────────────────────────────────────
-app.get('/', (req, res) => {
+// ─── Optional request logger (safe for serverless) ────────────────────────────
+app.use((req, _res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
+  next();
+});
+
+// ─── Routes ───────────────────────────────────────────────────────────────────
+// Use path.join for Linux case-sensitivity safety.
+// All folder names are lowercased here — rename your folders on disk to match.
+const userRoute = require(path.join(__dirname, 'router', 'userRoute'));
+const authRoute = require(path.join(__dirname, 'router', 'authRoute'));
+
+app.get('/', (_req, res) => {
   res.status(200).json({
     success: true,
     message: '🛡️ SafeRoute API is running!',
     status: 'ONLINE',
-    timestamp: new Date(),
+    dbState: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
   });
 });
 
-// ─────────────────────────────────────────────
-// Health Check Route
-// ─────────────────────────────────────────────
-app.get('/health', (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: 'Server is healthy',
-  });
-});
-
-// ─────────────────────────────────────────────
-// API Routes
-// ─────────────────────────────────────────────
 app.use('/students', userRoute);
 app.use('/auth', authRoute);
 
-// ─────────────────────────────────────────────
-// 404 Route Handler
-// ─────────────────────────────────────────────
+// ─── 404 Handler ──────────────────────────────────────────────────────────────
 app.use((req, res) => {
   res.status(404).json({
     success: false,
-    message: `Cannot ${req.method} ${req.originalUrl}`,
+    message: `Route not found: ${req.method} ${req.originalUrl}`,
   });
 });
 
-// ─────────────────────────────────────────────
-// Global Error Handler
-// ─────────────────────────────────────────────
-app.use((err, req, res, next) => {
-  console.error('❌ Error:', err.message);
-
-  res.status(500).json({
+// ─── Global Error Handler ─────────────────────────────────────────────────────
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, _next) => {
+  console.error('Unhandled error:', err);
+  res.status(err.status || 500).json({
     success: false,
-    message: 'Internal Server Error',
-    error: err.message,
+    message: err.message || 'Internal Server Error',
   });
 });
 
-// ─────────────────────────────────────────────
-// Local Development Server
-// ─────────────────────────────────────────────
+// ─── Local dev server (Vercel ignores this block) ─────────────────────────────
 if (process.env.NODE_ENV !== 'production') {
   const PORT = process.env.PORT || 3000;
-
-  app.listen(PORT, () => {
-    console.log(`✅ Server running on http://localhost:${PORT}`);
-  });
+  app.listen(PORT, () =>
+    console.log(`✅ Local server running → http://localhost:${PORT}`)
+  );
 }
 
-// ─────────────────────────────────────────────
-// Export App
-// ─────────────────────────────────────────────
 module.exports = app;

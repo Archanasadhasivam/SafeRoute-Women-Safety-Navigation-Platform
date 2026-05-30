@@ -1,30 +1,16 @@
-// ── Student Model ─────────────────────────────────────
-// Mongoose Schema and Model for Student
-// As taught by teacher: name(String), age(Number), email(String)
- 
 const mongoose = require('mongoose');
- 
-// ── Define Schema ─────────────────────────────────────
+
 const userSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-  },
-  age: {
-    type: Number,
-  },
-  department: {
-    type: String,
-    required: true,
-  },
-  email: {
-    type: String,
-    required: true,
-    unique: true,
-  },
+  username: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  name: { type: String, required: true },
+  phone: { type: String, required: false },
+  guardianPhone: { type: String, required: false },
+  // Setting required to false elements ensures old collections don't block new registrations
+  age: { type: Number, required: false },
+  department: { type: String, required: false },
+  email: { type: String, required: false } 
 });
- 
-// ── Create Model from Schema ──────────────────────────
+
 const User = mongoose.model('User', userSchema);
- 
 module.exports = User;
